@@ -1,82 +1,51 @@
 # ============================================================================
-# SECURITY - NEVER COMMIT THESE! 🔒
+# SECURITY - API KEYS & CREDENTIALS 🔒
 # ============================================================================
 .env
 *.env
 .env.local
 .env.production
 config/secrets.*
-**/secrets.*
-*.key
-*.pem
 api_keys.txt
+credentials.json
 
 # ============================================================================
-# PYTHON SPECIFIC 🐍
-# ============================================================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# ============================================================================
-# VIRTUAL ENVIRONMENTS 📦
+# PYTHON VIRTUAL ENVIRONMENTS 📦
 # ============================================================================
 venv/
 .venv/
 env/
 .env/
 ENV/
-env.bak/
-venv.bak/
 .virtualenv
 
 # ============================================================================
-# AI/ML SPECIFIC FILES 🤖
+# PYTHON CACHE & BUILD FILES 🐍
 # ============================================================================
-# Hugging Face cache
-.cache/
-**/transformers/
-**/.cache/transformers/
-**/.cache/huggingface/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+build/
+dist/
+.pytest_cache/
 
-# Model files (too large for git)
+# ============================================================================
+# AI/ML MODEL FILES (Too Large for Git) 🤖
+# ============================================================================
 *.bin
 *.safetensors
-*.onnx
 *.pkl
 *.joblib
 *.h5
-*.hdf5
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# TensorFlow
-*.tfrecords
-*.tfevents.*
-
-# PyTorch
 *.pth
 *.pt
+
+# Hugging Face cache
+.cache/
+**/transformers/
+**/.cache/huggingface/
 
 # ============================================================================
 # DATABASE FILES 💾
@@ -93,69 +62,20 @@ financial_news.db
 *.log
 logs/
 *.tmp
-*.temp
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
+debug/
+experiments/
 
 # ============================================================================
-# IDE & EDITOR FILES 💻
+# IDE FILES 💻
 # ============================================================================
-# VS Code
 .vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# PyCharm
 .idea/
 *.swp
 *.swo
-*~
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
 
 # ============================================================================
-# OPERATING SYSTEM FILES 🖥️
+# OPERATING SYSTEM 🖥️
 # ============================================================================
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
-Icon?
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-
-# ============================================================================
-# PROJECT SPECIFIC 🎯
-# ============================================================================
-# Your specific files that shouldn't be public
-test_results/
-experiments/
-debug/
-scratch/
-*.backup
-
-# Large data files
-data/raw/
-data/processed/
-*.csv.gz
-*.parquet
-
-# API response cache
-cache/
-responses/
+Thumbs.db
+Desktop.ini
