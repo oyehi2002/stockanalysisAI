@@ -24,3 +24,8 @@ AI-powered multi-agent system for analyzing Indian stock market sentiment using 
 - Runs automatically every 2 hours
 - Generates daily sentiment reports
 - Provides instant notifications for high-impact news
+
+---
+
+*Built with ❤️ for the Fintech community*
+
