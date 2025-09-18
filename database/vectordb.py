@@ -25,7 +25,7 @@ class Vectordb:
         self.setup_pinecone()
 
     def setup_pinecone(self):
-        """Initialize Pinecone vector database"""
+        """To Initialize Pinecone vector database"""
         if not HAS_PINECONE:
             print("⚠️ Pinecone not installed. Vector store functionality disabled.")
             print("   RAG features will be limited but system will still work!")

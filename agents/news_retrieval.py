@@ -23,7 +23,6 @@ class NewsAgent:
         try:
             url = 'https://newsapi.org/v2/everything'
 
-            # BROADER SEARCH STRATEGY - Cast wide net, filter later
             broad_queries = [
                 'India finance',
                 'Indian stock market',
@@ -34,7 +33,7 @@ class NewsAgent:
 
             all_articles = []
 
-            # Try multiple broad queries to maximize results
+            # Trying multiple broad queries to maximize results
             for query in broad_queries:
                 try:
                     params = {
@@ -69,7 +68,7 @@ class NewsAgent:
 
             print(f"📈 Total articles collected: {len(all_articles)}")
 
-            # Remove duplicates by URL
+            # For removing duplicates by URL
             seen_urls = set()
             unique_articles = []
             for article in all_articles:
@@ -81,7 +80,7 @@ class NewsAgent:
             print(
                 f"📰 Unique articles after deduplication: {len(unique_articles)}")
 
-            # Convert to NewsArticle objects and apply SMART FILTERING
+            # To convert to NewsArticle objects and apply SMART FILTERING
             news_articles = []
             for article in unique_articles:
                 if self._is_valid_article(article):

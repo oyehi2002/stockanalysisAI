@@ -9,10 +9,8 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text)
 
-    # Remove special characters but keep basic punctuation
     text = re.sub(r'[^\w\s\.\,\!\?\-]', '', text)
 
     return text.strip()

@@ -125,7 +125,7 @@ Generated on: {report.generated_at.strftime('%Y-%m-%d %H:%M:%S')}
 
         email_content += f"\n\n⚠️ TOP NEGATIVE NEWS:\n"
 
-        # Add top negative news
+        # To add top negative news
         for i, article in enumerate(report.top_negative, 1):
             email_content += f"""
 {i}. {article.title}
@@ -152,10 +152,8 @@ Generated on: {report.generated_at.strftime('%Y-%m-%d %H:%M:%S')}
             return False
 
         try:
-            # Format report
             email_body = self.format_email_report(report)
 
-            # Create message
             msg = MIMEMultipart()
             msg['From'] = settings.email_user
             msg['To'] = settings.email_to
