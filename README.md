@@ -26,7 +26,6 @@ An AI-powered system that monitors Indian stock market news, analyzes sentiment 
 
 - **Model**: ProsusAI/FinBERT
 - **Type**: Financial sentiment analysis transformer
-- **Output**: Positive/Negative/Neutral with confidence scores
 
 ---
 
