@@ -4,16 +4,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from typing import List
-
-try:
-    import plyer
-    HAS_PLYER = True
-except ImportError:
-    HAS_PLYER = False
-
-from data_models import SentimentResult, AnalysisReport
+import plyer
+from data_models import NewsArticle
 from settings import settings
-from helpers import calculate_sentiment_stats
 
 logger = logging.getLogger(__name__)
 
@@ -26,154 +19,101 @@ class NotificationAgent:
             settings.email_to
         ])
 
-    def send_instant_notification(self, result: SentimentResult):
-        """Send system notification for important news"""
-        if not HAS_PLYER:
-            logger.debug(
-                "System notifications not available (plyer not installed)")
-            return
-
+    def send_notifications(self, sentiment_agent):
+        """Send desktop notifications for important news"""
         try:
-            sentiment = result.sentiment_label.value
-            title = result.article.title
+            categorized = sentiment_agent.get_categorized_articles()
 
-            # Only notify for strong positive/negative sentiment with high confidence
-            if (sentiment in ['positive', 'negative'] and
-                    result.confidence > settings.high_confidence_threshold):
-
+            # Send notifications for top positive news (max 3)
+            for title in categorized['positive'][:3]:
                 plyer.notification.notify(
-                    title=f"📈 {sentiment.title()} Market News",
+                    title="📈 Positive Market News",
                     message=title[:100] + "..." if len(title) > 100 else title,
                     timeout=10
                 )
 
-                logger.info(f"Sent notification for {sentiment} news")
+            # Send notifications for top negative news (max 3)
+            for title in categorized['negative'][:3]:
+                plyer.notification.notify(
+                    title="📉 Negative Market News",
+                    message=title[:100] + "..." if len(title) > 100 else title,
+                    timeout=10
+                )
+
+            logger.info(
+                f"Sent notifications: {len(categorized['positive'][:3])} positive, {len(categorized['negative'][:3])} negative")
 
         except Exception as e:
-            logger.error(f"Error sending system notification: {e}")
+            logger.error(f"Error sending notifications: {e}")
 
-    def generate_daily_report(self, results: List[SentimentResult]) -> AnalysisReport:
-        """Generate comprehensive daily analysis report"""
-        if not results:
-            logger.warning("No results to generate report from")
-            return AnalysisReport(
-                total_articles=0,
-                positive_count=0,
-                negative_count=0,
-                neutral_count=0,
-                average_sentiment=0.0,
-                top_positive=[],
-                top_negative=[]
-            )
-
-        # Calculate statistics
-        stats = calculate_sentiment_stats(results)
-
-        # Get top articles by sentiment
-        positive_articles = [
-            r for r in results if r.sentiment_label.value == 'positive']
-        negative_articles = [
-            r for r in results if r.sentiment_label.value == 'negative']
-
-        top_positive = sorted(
-            positive_articles,
-            key=lambda x: x.sentiment_score,
-            reverse=True
-        )[:5]
-
-        top_negative = sorted(
-            negative_articles,
-            key=lambda x: x.sentiment_score
-        )[:5]
-
-        return AnalysisReport(
-            total_articles=stats['total'],
-            positive_count=stats['positive'],
-            negative_count=stats['negative'],
-            neutral_count=stats['neutral'],
-            average_sentiment=stats['average_score'],
-            top_positive=[r.article for r in top_positive],
-            top_negative=[r.article for r in top_negative]
-        )
-
-    def format_email_report(self, report: AnalysisReport) -> str:
-        """Format analysis report for email"""
-        if report.total_articles == 0:
-            return "No financial news analyzed today."
-
-        email_content = f"""
-📊 DAILY INDIAN STOCK MARKET SENTIMENT REPORT
-Generated on: {report.generated_at.strftime('%Y-%m-%d %H:%M:%S')}
-
-📈 SUMMARY STATISTICS:
-• Total Articles Analyzed: {report.total_articles}
-• Positive News: {report.positive_count} ({report.positive_percentage:.1f}%)
-• Negative News: {report.negative_count} ({report.negative_percentage:.1f}%)
-• Neutral News: {report.neutral_count} ({report.neutral_percentage:.1f}%)
-• Average Sentiment Score: {report.average_sentiment:.3f}
-
-🔥 TOP POSITIVE NEWS:
-"""
-
-        # Add top positive news
-        for i, article in enumerate(report.top_positive, 1):
-            email_content += f"""
-{i}. {article.title}
-   Source: {article.source}
-   URL: {article.url}
-"""
-
-        email_content += f"\n\n⚠️ TOP NEGATIVE NEWS:\n"
-
-        # To add top negative news
-        for i, article in enumerate(report.top_negative, 1):
-            email_content += f"""
-{i}. {article.title}
-   Source: {article.source}
-   URL: {article.url}
-"""
-
-        email_content += f"\n\n📊 MARKET OUTLOOK:\n"
-        if report.average_sentiment > 0.1:
-            email_content += "• Overall sentiment is POSITIVE - Good market conditions expected\n"
-        elif report.average_sentiment < -0.1:
-            email_content += "• Overall sentiment is NEGATIVE - Cautious market approach recommended\n"
-        else:
-            email_content += "• Overall sentiment is NEUTRAL - Balanced market conditions\n"
-
-        email_content += f"\n---\nGenerated by AI Financial Sentiment Analysis System"
-
-        return email_content
-
-    def send_email_report(self, report: AnalysisReport) -> bool:
-        """Send daily report via email"""
+    def send_email_report(self, sentiment_agent, articles: List[NewsArticle]) -> bool:
+        """Generate and send email report in one step"""
         if not self.email_configured:
-            logger.warning("Email not configured, skipping email report")
+            print("❌ Email not configured")
             return False
 
         try:
-            email_body = self.format_email_report(report)
+            # Get categorized results
+            categorized = sentiment_agent.get_categorized_articles()
 
+            positive_count = len(categorized['positive'])
+            negative_count = len(categorized['negative'])
+            neutral_count = len(categorized['neutral'])
+            total = positive_count + negative_count + neutral_count
+
+            if total == 0:
+                email_body = "No financial news analyzed today."
+            else:
+                # Create simple email content
+                email_body = f"""
+📊 DAILY INDIAN STOCK MARKET SENTIMENT REPORT
+
+📈 SUMMARY:
+• Total Articles: {total}
+• Positive: {positive_count} ({positive_count/total*100:.1f}%)
+• Negative: {negative_count} ({negative_count/total*100:.1f}%)
+• Neutral: {neutral_count} ({neutral_count/total*100:.1f}%)
+
+🔥 TOP POSITIVE NEWS:
+"""
+                # Add positive news
+                for i, title in enumerate(categorized['positive'][:5], 1):
+                    email_body += f"{i}. {title}\n"
+
+                email_body += "\n⚠️ TOP NEGATIVE NEWS:\n"
+
+                # Add negative news
+                for i, title in enumerate(categorized['negative'][:5], 1):
+                    email_body += f"{i}. {title}\n"
+
+                # Market outlook
+                outlook = "POSITIVE" if positive_count > negative_count else "NEGATIVE" if negative_count > positive_count else "NEUTRAL"
+                email_body += f"\n📊 MARKET OVERALL OUTLOOK: {outlook}\n"
+                email_body += "\n---\nAutomated report generated by - SHREYA RAMRAIKA "
+
+            # Send email
             msg = MIMEMultipart()
             msg['From'] = settings.email_user
             msg['To'] = settings.email_to
-            msg['Subject'] = f"Daily Financial Sentiment Report - {report.generated_at.strftime('%Y-%m-%d')}"
-
+            msg['Subject'] = f"Financial Sentiment Report - {datetime.now().strftime('%Y-%m-%d')}"
             msg.attach(MIMEText(email_body, 'plain'))
 
-            # Send via Gmail SMTP
             with smtplib.SMTP('smtp.gmail.com', 587) as server:
                 server.starttls()
                 server.login(settings.email_user, settings.email_pass)
-                server.sendmail(
-                    settings.email_user,
-                    settings.email_to,
-                    msg.as_string()
-                )
+                server.sendmail(settings.email_user,
+                                settings.email_to, msg.as_string())
 
-            logger.info("Daily report sent successfully via email")
+            print("✅ Email report sent successfully")
             return True
 
         except Exception as e:
-            logger.error(f"Error sending email report: {e}")
+            print(f"❌ Email failed: {e}")
             return False
+
+    def send_all_notifications(self, sentiment_agent, articles: List[NewsArticle]):
+        """Helps send notifications and email report"""
+        self.send_notifications(sentiment_agent)
+
+        print("📧 Sending email report...")
+        self.send_email_report(sentiment_agent, articles)

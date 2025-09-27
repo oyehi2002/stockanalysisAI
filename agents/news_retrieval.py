@@ -6,7 +6,6 @@ import time
 
 from data_models import NewsArticle
 from settings import settings
-from helpers import is_indian_market_relevant
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +36,12 @@ class NewsAgent:
             for query in broad_queries:
                 try:
                     params = {
-                        'q': query,  # Simple, broad query
+                        'q': query,
                         'language': 'en',
                         'sortBy': 'publishedAt',
-                        # 3 days instead of 24h
-                        'from': (datetime.now() - timedelta(days=3)).isoformat(),
+                        'from': (datetime.now() - timedelta(days=2)).isoformat(),
                         'apiKey': settings.news_api_key,
-                        'pageSize': 20  # Smaller batches
+                        'pageSize': 20
                     }
 
                     print(f"🔍 Searching: '{query}'")
@@ -60,7 +58,7 @@ class NewsAgent:
                     all_articles.extend(articles)
 
                     # Avoid rate limiting
-                    time.sleep(0.5)
+                    time.sleep(1)
 
                 except Exception as e:
                     print(f"⚠️ Query '{query}' failed: {e}")
@@ -73,7 +71,7 @@ class NewsAgent:
             unique_articles = []
             for article in all_articles:
                 url_str = article.get('url', '')
-                if url_str and url_str not in seen_urls:
+                if url_str not in seen_urls:
                     seen_urls.add(url_str)
                     unique_articles.append(article)
 

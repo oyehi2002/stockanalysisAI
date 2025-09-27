@@ -1,109 +1,104 @@
 import logging
-from typing import List, Tuple
+from typing import List
 from transformers import pipeline
-from sentence_transformers import SentenceTransformer
-
 from data_models import NewsArticle, SentimentResult, SentimentLabel
-from database.vectordb import Vectordb
-from settings import settings
-from helpers import truncate_text
 
 logger = logging.getLogger(__name__)
 
 
 class SentimentAnalysisAgent:
-    def __init__(self, vector_store: Vectordb):
-        self.vector_store = vector_store
-        self.sentiment_model = None
-        self.setup_models()
+    def __init__(self, use_simple_model=False):
+        self.use_simple = use_simple_model
 
-    def setup_models(self):
-        """Initialize sentiment analysis models"""
-        try:
-            self.sentiment_model = pipeline(
+        # Initialize lists as instance variables (not global)
+        self.positive_articles = []
+        self.negative_articles = []
+        self.neutral_articles = []
+
+        if not self.use_simple:
+            # Load FinBERT for financial sentiment analysis
+            self.ai_model = pipeline(
                 "sentiment-analysis",
-                model=settings.sentiment_model,
-                tokenizer=settings.sentiment_model
+                model="ProsusAI/finbert"
             )
-            logger.info(f"Loaded sentiment model: {settings.sentiment_model}")
-
-        except Exception as e:
-            logger.error(f"Error loading sentiment model: {e}")
-            # Fallback to basic model
-            try:
-                self.sentiment_model = pipeline("sentiment-analysis")
-                logger.info("Using fallback sentiment model")
-            except Exception as fallback_error:
-                logger.error(
-                    f"Failed to load fallback model: {fallback_error}")
-                raise
+            print("✅ Loaded FinBERT AI model")
 
     def analyze_articles(self, articles: List[NewsArticle]) -> List[SentimentResult]:
-        """Analyze sentiment for multiple articles with RAG context"""
+        """Analyze sentiment for all articles"""
         results = []
 
-        for article in articles:
+        # Clear previous results
+        self.positive_articles = []
+        self.negative_articles = []
+        self.neutral_articles = []
+
+        print(f"🧠 Starting sentiment analysis for {len(articles)} articles...")
+
+        for i, article in enumerate(articles, 1):
             try:
                 result = self.analyze_single_article(article)
-                if result:
-                    results.append(result)
+                results.append(result)
+                print(
+                    f"✅ {i}/{len(articles)}: {result.sentiment_label.value.upper()} ({result.confidence:.2f})")
 
             except Exception as e:
-                logger.error(
-                    f"Error analyzing article '{article.title[:50]}...': {e}")
+                print(f"❌ {i}/{len(articles)}: Failed - {e}")
                 continue
 
-        logger.info(f"Successfully analyzed {len(results)} articles")
+        print(
+            f"📊 Successfully analyzed {len(results)}/{len(articles)} articles")
+        print(f"📈 Positive: {len(self.positive_articles)}")
+        print(f"📉 Negative: {len(self.negative_articles)}")
+        print(f"😐 Neutral: {len(self.neutral_articles)}")
+
         return results
 
     def analyze_single_article(self, article: NewsArticle) -> SentimentResult:
-        """Analyze sentiment for a single article with RAG enhancement"""
-        # Prepare text for analysis
-        text = f"{article.title} {article.description or ''}".strip()
+        """Analyze ONE article - choose method based on initialization"""
+
+        # Combine title + description
+        text = f"{article.title}. {article.description or ''}".strip()
 
         if not text:
-            raise ValueError("No text content to analyze")
+            raise ValueError("No text to analyze")
 
-        # Get RAG context
-        context = self.vector_store.get_similar_context(
-            text,
-            similarity_threshold=settings.similarity_threshold
-        )
+        # Truncate if too long
+        if len(text) > 400:
+            text = text[:400] + "..."
 
-        # Enhanced text with context
-        enhanced_text = f"{text}. Context: {context}" if context else text
-        enhanced_text = truncate_text(enhanced_text, 512)
+        # Get sentiment analysis results
+        sentiment_score, sentiment_label, confidence = self._ai_sentiment(
+            text, article)
 
-        # Analyze sentiment
-        sentiment_result = self.sentiment_model(enhanced_text)[0]
-
-        # Convert to standardized format
-        sentiment_score, sentiment_label = self._standardize_sentiment(
-            sentiment_result)
-
-        # Create result object
-        result = SentimentResult(
+        return SentimentResult(
             article=article,
             sentiment_score=sentiment_score,
             sentiment_label=sentiment_label,
-            confidence=sentiment_result.get('score', 0.0),
-            context_used=bool(context)
+            confidence=confidence,
+            context_used=False
         )
 
-        # Store in vector database
-        self.vector_store.store_article(result)
+    def _ai_sentiment(self, text: str, article: NewsArticle):
+        """FinBERT AI sentiment analysis - better for financial text"""
+        raw_result = self.ai_model(text)[0]
 
-        return result
+        label = raw_result['label'].upper()
+        confidence = raw_result['score']
 
-    def _standardize_sentiment(self, sentiment_result: dict) -> Tuple[float, SentimentLabel]:
-        """Convert various sentiment formats to standardized format"""
-        label = sentiment_result.get('label', '').upper()
-        score = sentiment_result.get('score', 0.0)
-
-        # Map different model outputs to standard format
-        if label in ['POSITIVE', 'POS']:
-            return score, SentimentLabel.POSITIVE
-        elif label in ['NEGATIVE', 'NEG']:
-            return -score, SentimentLabel.NEGATIVE  # Negative score for negative sentiment
+        if label == 'POSITIVE':
+            self.positive_articles.append(article.title)
+            return confidence, SentimentLabel.POSITIVE, confidence
+        elif label == 'NEGATIVE':
+            self.negative_articles.append(article.title)
+            return -confidence, SentimentLabel.NEGATIVE, confidence
         else:
-            return 0.0, SentimentLabel.NEUTRAL
+            self.neutral_articles.append(article.title)
+            return 0.0, SentimentLabel.NEUTRAL, confidence
+
+    def get_categorized_articles(self):
+        """Get the sorted article lists"""
+        return {
+            'positive': self.positive_articles,
+            'negative': self.negative_articles,
+            'neutral': self.neutral_articles
+        }

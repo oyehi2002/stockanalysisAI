@@ -1,31 +1,33 @@
-# 🚀 Financial Sentiment Analysis System with RAG
+# 📈 Financial Sentiment Analysis System
 
-AI-powered multi-agent system for analyzing Indian stock market sentiment using Retrieval Augmented Generation.
+An AI-powered system that monitors Indian stock market news, analyzes sentiment using FinBERT, and sends real-time notifications via desktop alerts and email reports.
 
-## 🎯 Features
-- **Real-time News Analysis**: Automated Indian financial news processing
-- **RAG-Enhanced AI**: Context-aware sentiment analysis using vector retrieval
-- **Multi-Agent Architecture**: Specialized agents for different tasks
-- **Automated Reporting**: Daily email reports and instant notifications
+## 🚀 Features
 
-## 🏗️ Architecture
-- **NewsAgent**: Intelligent news retrieval and filtering
-- **SentimentAgent**: FinBERT + RAG for enhanced sentiment analysis  
-- **NotificationAgent**: Automated insights and reporting
+- **Real-time News Monitoring**: Fetches latest Indian financial news from NewsAPI
+- **AI Sentiment Analysis**: Uses FinBERT model for accurate financial sentiment detection
+- **Smart Filtering**: Automatically filters for Indian market relevance (BSE, NSE, SENSEX, NIFTY, major companies)
+- **Instant Notifications**: Desktop alerts for important positive/negative news
+- **Email Reports**: Automated email summaries with market outlook
+- **Scheduled Analysis**: Configurable intervals (default: every 2 hours)
 
-## 🛠️ Tech Stack
-- **AI/ML**: FinBERT, Sentence Transformers, Hugging Face
-- **Databases**: SQLite (caching) + Pinecone (vector storage)
-- **APIs**: NewsAPI, Gmail SMTP
-- **Architecture**: Multi-agent system with RAG pipeline
+## 📋 Requirements
 
-## 📊 Results
-- Processes 20-50 articles per analysis cycle
-- Runs automatically every 2 hours
-- Generates daily sentiment reports
-- Provides instant notifications for high-impact news
+- Python 3.8+
+- NewsAPI.org API key (free)
+- Gmail account for email reports (optional)
+
+### Notification Settings
+
+- Desktop notifications: Top 3 positive + top 3 negative news
+- Email reports: Complete analysis summary with market outlook
+
+## 🧠 AI Model
+
+- **Model**: ProsusAI/FinBERT
+- **Type**: Financial sentiment analysis transformer
+- **Output**: Positive/Negative/Neutral with confidence scores
 
 ---
 
-*Built with ❤️ for the Fintech community*
-
+**Made with ❤️ for Indian Stock Market Analysis**
